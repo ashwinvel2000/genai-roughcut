@@ -3,11 +3,6 @@
 > Transform text prompts into AI-generated video rough cuts in 40 seconds
 
 ## System Architecture
-
-### High-Level Flow
-![High-Level Flow Diagram](assets/high_level_flow.png)
-
-### Detailed System Architecture  
 ![System Architecture](assets/system_architecture.png)
 
 ## Overview
@@ -18,6 +13,8 @@ Script-to-Rough-Cut is a production-ready web application that automatically gen
 2. **Voice-Over** - gTTS (free) or ElevenLabs (premium)
 3. **Visual Assets** - Pollinations.ai (AI images), Pexels (stock photos), or Pillow (placeholders)
 4. **Video Assembly** - MoviePy + FFmpeg (1920x1080 @ 24fps)
+
+![High-Level Flow Diagram](assets/high_level_flow.png)
 
 ## Tech Stack
 
