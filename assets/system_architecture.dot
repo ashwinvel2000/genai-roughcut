@@ -1,0 +1,74 @@
+digraph SystemArchitecture {
+    rankdir=TB;
+    node [shape=box, style=rounded];
+    
+    // Deployment
+    subgraph cluster_deployment {
+        label="Deployment Options";
+        style=filled;
+        color=lightsteelblue;
+        
+        Docker [label="Docker Container\nashwinvel2000/ai-video-generator\n(Docker Hub)", fillcolor=skyblue, style=filled];
+        Azure [label="Azure Container Apps\n(Optional Deploy)", fillcolor=lightblue, style=filled, style=dashed];
+    }
+    
+    // Input
+    User [label="User\n(Web Browser)", shape=oval, fillcolor=lightblue, style=filled];
+    
+    // Frontend
+    Frontend [label="Frontend\nBootstrap 5 + Vanilla JS\nWebSocket Client", fillcolor=lightyellow, style=filled];
+    
+    // Backend Components
+    subgraph cluster_backend {
+        label="FastAPI Backend (Python)";
+        style=filled;
+        color=lightgrey;
+        
+        API [label="REST API\n/generate\n/healthz"];
+        WS [label="WebSocket\n/ws/{run_id}"];
+        Pipeline [label="Async Pipeline\nOrchestration"];
+        
+        API -> Pipeline;
+        WS -> Pipeline;
+    }
+    
+    // AI Services
+    subgraph cluster_ai {
+        label="AI Components (Configurable)";
+        style=filled;
+        color=lightgreen;
+        
+        LLM [label="Script Generation\nDistilGPT-2 (transformers)\nor Template\nor OpenAI GPT-4"];
+        TTS [label="Voice Synthesis\ngTTS (free)\nor ElevenLabs (premium)"];
+        ImageAI [label="Image Generation\nPollinations.ai (AI)\nor Pexels (stock)\nor Pillow (placeholder)"];
+    }
+    
+    // Processing
+    Assemble [label="MoviePy + FFmpeg\nVideo Assembly", fillcolor=orange, style=filled];
+    
+    // Storage
+    Storage [label="File Storage\n/outputs/{run_id}/", shape=cylinder, fillcolor=lightcyan, style=filled];
+    
+    // Flow
+    Docker -> Frontend [label="Port 8080"];
+    Azure -> Frontend [label="HTTPS" style=dashed];
+    
+    User -> Frontend [label="1. Submit brief"];
+    Frontend -> API [label="2. POST /generate"];
+    API -> WS [label="3. Connect WebSocket"];
+    
+    Pipeline -> LLM [label="4a. Generate script\n(5 scenes)"];
+    Pipeline -> TTS [label="4b. Synthesize audio"];
+    Pipeline -> ImageAI [label="4c. Generate images\n(max 2 concurrent)"];
+    
+    LLM -> Pipeline [label="5 script lines"];
+    TTS -> Pipeline [label="audio.mp3"];
+    ImageAI -> Pipeline [label="5 x scene_N.jpg"];
+    
+    Pipeline -> Assemble [label="5. Combine assets"];
+    Assemble -> Storage [label="6. Save output.mp4"];
+    
+    WS -> Frontend [label="Real-time progress"];
+    Storage -> Frontend [label="7. Stream video"];
+    Frontend -> User [label="8. Download/view"];
+}

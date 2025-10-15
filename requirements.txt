@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+python-multipart
+requests
+python-dotenv
+pydantic
+pydantic-settings
+jinja2
+moviepy
+gTTS
+Pillow
+transformers
+torch
+# openai  # Optional - only needed for script_mode="openai"
+# elevenlabs  # Optional - only needed for tts_mode="elevenlabs"

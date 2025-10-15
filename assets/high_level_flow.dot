@@ -1,0 +1,31 @@
+digraph HighLevelFlow {
+    rankdir=TB;
+    node [shape=box, style="rounded,filled"];
+    
+    // Stages
+    Idea [label="User Idea\n'Create a video about\nartificial intelligence'", fillcolor="#E3F2FD"];
+    
+    Script [label="AI Script Writer\nTool: DistilGPT-2\nGenerates 5 compelling scenes\nusing language AI", fillcolor="#FFF9C4"];
+    
+    Voice [label="Voice Synthesis\nTool: gTTS\nConverts script to\nprofessional narration", fillcolor="#F3E5F5"];
+    
+    Images [label="AI Image Generator\nTool: Pollinations.ai\nCreates unique visuals\nfor each scene", fillcolor="#E8F5E9"];
+    
+    Assemble [label="Video Assembly\nTool: MoviePy\nCombines audio + images\ninto final video", fillcolor="#FFE0B2"];
+    
+    Video [label="Final Video\n30-second rough cut\nready to download", fillcolor="#C8E6C9"];
+    
+    // Flow
+    Idea -> Script [label="Step 1\n~5 seconds"];
+    Script -> Voice [label="Step 2\n~10 seconds"];
+    Voice -> Images [label="Step 3\n~15 seconds"];
+    Images -> Assemble [label="Step 4\n~30 seconds"];
+    Assemble -> Video [label="Step 5\n~40 seconds"];
+    
+    // Real-time updates
+    Updates [label="Real-Time Progress\nYou see updates at every step", shape=note, fillcolor="#FFF9C4", style="filled,dashed"];
+    Script -> Updates [style=dashed];
+    Voice -> Updates [style=dashed];
+    Images -> Updates [style=dashed];
+    Assemble -> Updates [style=dashed];
+}

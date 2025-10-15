@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      # Optional: Add API keys if you want to use premium services
+      # - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY}
+      # - ELEVENLABS_VOICE_ID=${ELEVENLABS_VOICE_ID}
+      # - PEXELS_API_KEY=${PEXELS_API_KEY}
+      - LOG_LEVEL=INFO
+    volumes:
+      # Optional: Mount outputs for persistence
+      - ./outputs:/app/outputs
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

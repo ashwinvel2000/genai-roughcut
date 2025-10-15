@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Script-to-Rough-Cut</title>
+    
+    <!-- Bootstrap CSS from CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .hero-section {
+            padding: 4rem 0;
+            background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%);
+            color: white;
+            margin-bottom: 3rem;
+            text-align: center;
+        }
+        .card {
+            box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+        }
+        #status {
+            display: none;
+            margin-top: 1rem;
+        }
+        #progressContainer {
+            display: none;
+            margin-top: 1rem;
+        }
+        .progress {
+            height: 30px;
+        }
+        .progress-bar {
+            font-size: 14px;
+            line-height: 30px;
+        }
+        #videoContainer {
+            display: none;
+            margin-top: 2rem;
+        }
+        .spinner-border {
+            display: none;
+        }
+        .btn-loading .spinner-border {
+            display: inline-block;
+        }
+        
+        /* Preview Panel Styles */
+        #previewPanel {
+            display: none;
+            margin-top: 2rem;
+        }
+        .preview-section {
+            background: #fff;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .preview-section h6 {
+            color: #1a1a1a;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .script-line {
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            background: #f8f9fa;
+            border-left: 3px solid #1a1a1a;
+            border-radius: 4px;
+            animation: fadeInUp 0.5s ease;
+        }
+        .script-line .line-number {
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-right: 0.5rem;
+        }
+        .image-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+        .image-item {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            animation: zoomIn 0.5s ease;
+        }
+        .image-item img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            display: block;
+        }
+        .image-item .image-label {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            text-align: center;
+        }
+        .stage-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: #e9ecef;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        .stage-indicator.active {
+            background: #1a1a1a;
+            color: white;
+        }
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes zoomIn {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero Section -->
+    <div class="hero-section">
+        <div class="container">
+            <h1 class="display-4 fw-bold">Script-to-Rough-Cut</h1>
+            <p class="lead">Transform your ideas into video rough cuts with AI</p>
+            <p class="mb-0">Free stack with real-time WebSocket progress updates</p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <!-- Input Card -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title mb-3">Create Your Video</h5>
+                        <form id="generateForm">
+                            <div class="mb-3">
+                                <label for="brief" class="form-label">Describe your video concept</label>
+                                <textarea 
+                                    class="form-control" 
+                                    id="brief" 
+                                    name="brief"
+                                    rows="4" 
+                                    placeholder="Example: A motivational video about pursuing your dreams with inspiring visuals of nature and people achieving goals..."
+                                    required></textarea>
+                                <div class="form-text">The AI will generate a script, voiceover, images, and assemble a 30-second video.</div>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-lg w-100" id="generate">
+                                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                <span class="btn-text">Generate</span>
+                            </button>
+                        </form>
+
+                        <!-- Progress Bar -->
+                        <div id="progressContainer">
+                            <div class="progress">
+                                <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%">
+                                    <span id="progressText">Starting...</span>
+                                </div>
+                            </div>
+                            <small id="progressDetail" class="text-muted mt-2 d-block"></small>
+                        </div>
+
+                        <!-- Status Messages -->
+                        <div id="status" class="alert" role="alert"></div>
+                    </div>
+                </div>
+
+                <!-- Live Preview Panel -->
+                <div id="previewPanel">
+                    <!-- Stage Indicators -->
+                    <div class="preview-section">
+                        <div class="d-flex flex-wrap gap-2 justify-content-center">
+                            <span class="stage-indicator" id="stage-script">
+                                Script
+                            </span>
+                            <span class="stage-indicator" id="stage-audio">
+                                Audio
+                            </span>
+                            <span class="stage-indicator" id="stage-images">
+                                Images
+                            </span>
+                            <span class="stage-indicator" id="stage-video">
+                                Video
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Script Preview -->
+                    <div class="preview-section" id="scriptPreviewSection" style="display: none;">
+                        <h6>
+                            Generated Script
+                        </h6>
+                        <div id="scriptPreview"></div>
+                    </div>
+
+                    <!-- Image Gallery -->
+                    <div class="preview-section" id="imageGallerySection" style="display: none;">
+                        <h6>
+                            AI-Generated Images
+                            <span class="badge bg-success ms-2" id="imageCount">0/5</span>
+                        </h6>
+                        <div class="image-gallery" id="imageGallery"></div>
+                    </div>
+                </div>
+
+                <!-- Video Preview Card -->
+                <div class="card" id="videoContainer">
+                    <div class="card-body">
+                        <h5 class="card-title mb-3">Your Video</h5>
+                        <video id="videoPlayer" class="w-100 mb-3" controls></video>
+                        <div class="d-grid gap-2">
+                            <a id="downloadBtn" class="btn btn-success" download>Download Video</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Section -->
+        <div class="row mt-5">
+            <div class="col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">AI Script Generation</h5>
+                        <p class="card-text">Transformer-based script generation using DistilGPT-2.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Voice-Over</h5>
+                        <p class="card-text">High-quality TTS using gTTS for natural-sounding narration.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">AI Images</h5>
+                        <p class="card-text">AI-generated visuals using Pollinations.ai (Stable Diffusion).</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center text-muted py-4 mt-5">
+        <div class="container">
+            <small>Script-to-Rough-Cut v0.1.0 | Built with FastAPI & Bootstrap</small>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Application JavaScript -->
+    <script>
+        const form = document.getElementById('generateForm');
+        const generateBtn = document.getElementById('generate');
+        const btnText = generateBtn.querySelector('.btn-text');
+        const statusDiv = document.getElementById('status');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        const progressDetail = document.getElementById('progressDetail');
+        const videoContainer = document.getElementById('videoContainer');
+        const videoPlayer = document.getElementById('videoPlayer');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        // Preview panel elements
+        const previewPanel = document.getElementById('previewPanel');
+        const scriptPreviewSection = document.getElementById('scriptPreviewSection');
+        const scriptPreview = document.getElementById('scriptPreview');
+        const imageGallerySection = document.getElementById('imageGallerySection');
+        const imageGallery = document.getElementById('imageGallery');
+        const imageCount = document.getElementById('imageCount');
+        
+        // Stage indicators
+        const stageScript = document.getElementById('stage-script');
+        const stageAudio = document.getElementById('stage-audio');
+        const stageImages = document.getElementById('stage-images');
+        const stageVideo = document.getElementById('stage-video');
+
+        let currentWebSocket = null;
+        let scriptLines = [];
+        let imagesGenerated = 0;
+
+        // Step configuration with progress percentages
+        const STEPS = {
+            'queued': { progress: 5, label: 'Queued', color: 'bg-info' },
+            'script': { progress: 20, label: 'Generating Script', color: 'bg-info' },
+            'tts': { progress: 40, label: 'Synthesizing Voice', color: 'bg-primary' },
+            'images': { progress: 60, label: 'Creating Images', color: 'bg-primary' },
+            'assemble': { progress: 80, label: 'Assembling Video', color: 'bg-warning' },
+            'done': { progress: 100, label: 'Complete', color: 'bg-success' },
+            'error': { progress: 100, label: 'Error', color: 'bg-danger' }
+        };
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const brief = document.getElementById('brief').value.trim();
+            if (!brief) return;
+
+            // Reset UI
+            statusDiv.style.display = 'none';
+            videoContainer.style.display = 'none';
+            progressContainer.style.display = 'none';
+            previewPanel.style.display = 'none';
+            scriptPreviewSection.style.display = 'none';
+            imageGallerySection.style.display = 'none';
+            scriptPreview.innerHTML = '';
+            imageGallery.innerHTML = '';
+            scriptLines = [];
+            imagesGenerated = 0;
+            imageCount.textContent = '0/5';
+            
+            // Reset stage indicators
+            [stageScript, stageAudio, stageImages, stageVideo].forEach(stage => {
+                stage.classList.remove('active', 'pulse');
+            });
+            
+            // Show loading state
+            generateBtn.disabled = true;
+            generateBtn.classList.add('btn-loading');
+            btnText.textContent = 'Generating...';
+            
+            try {
+                // Create FormData
+                const formData = new FormData();
+                formData.append('brief', brief);
+                
+                // Submit to /generate endpoint
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const runId = data.run_id;
+                
+                if (!runId) {
+                    throw new Error('No run_id received from server');
+                }
+                
+                // Show progress bar and connect WebSocket for real-time updates
+                progressContainer.style.display = 'block';
+                previewPanel.style.display = 'block';
+                updateProgress('queued', 'Connecting...');
+                connectWebSocket(runId);
+                
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'danger');
+                resetButton();
+            }
+        });
+
+        function connectWebSocket(runId) {
+            // Close any existing WebSocket
+            if (currentWebSocket) {
+                currentWebSocket.close();
+            }
+            
+            // Determine WebSocket protocol (ws or wss)
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws/${runId}`;
+            
+            console.log(`Connecting to WebSocket: ${wsUrl}`);
+            currentWebSocket = new WebSocket(wsUrl);
+            const ws = currentWebSocket;
+            
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+                updateProgress('queued', 'Connected, starting generation...');
+            };
+            
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    console.log('WebSocket message:', data);
+                    
+                    // Handle script line generation
+                    if (data.type === 'script_line' && data.line) {
+                        addScriptLine(data.line, data.index || scriptLines.length + 1);
+                    }
+                    
+                    // Handle image generation
+                    if (data.type === 'image_ready' && data.scene_num !== undefined) {
+                        addImageToGallery(data.scene_num, data.method || 'AI');
+                    }
+                    
+                    // Update stage indicators
+                    if (data.step) {
+                        updateStageIndicator(data.step);
+                    }
+                    
+                    // Update progress bar
+                    if (data.progress !== undefined) {
+                        const step = data.step || 'queued';
+                        const message = data.message || 'Processing...';
+                        updateProgress(step, message, data.progress);
+                    }
+                    
+                    // Check if done
+                    if (data.done) {
+                        if (data.error) {
+                            // Error occurred
+                            progressContainer.style.display = 'none';
+                            showStatus(`Generation failed: ${data.error}`, 'danger');
+                            resetButton();
+                        } else if (data.video_url) {
+                            // Success!
+                            progressContainer.style.display = 'none';
+                            showStatus('Video generated successfully!', 'success');
+                            showVideo(runId);
+                            resetButton();
+                        }
+                        ws.close();
+                    }
+                } catch (error) {
+                    console.error('Error parsing WebSocket message:', error);
+                }
+            };
+            
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                progressContainer.style.display = 'none';
+                showStatus('Connection error. Please try again.', 'danger');
+                resetButton();
+            };
+            
+            ws.onclose = (event) => {
+                console.log('WebSocket closed:', event.code, event.reason);
+                if (!event.wasClean) {
+                    progressContainer.style.display = 'none';
+                    showStatus('Connection lost. Please try again.', 'danger');
+                    resetButton();
+                }
+            };
+        }
+
+        function updateProgress(step, message, progress = null) {
+            const stepInfo = STEPS[step] || STEPS['queued'];
+            const progressValue = progress !== null ? progress : stepInfo.progress;
+            const label = stepInfo.label;
+            
+            // Update progress bar
+            progressBar.style.width = progressValue + '%';
+            progressBar.setAttribute('aria-valuenow', progressValue);
+            progressBar.className = `progress-bar progress-bar-striped ${step === 'done' ? '' : 'progress-bar-animated'} ${stepInfo.color}`;
+            
+            // Update text
+            progressText.textContent = `${progressValue}% - ${label}`;
+            progressDetail.textContent = message;
+        }
+
+        function updateStageIndicator(step) {
+            // Remove pulse from all stages
+            [stageScript, stageAudio, stageImages, stageVideo].forEach(stage => {
+                stage.classList.remove('pulse');
+            });
+            
+            // Update active states
+            switch(step) {
+                case 'script':
+                    stageScript.classList.add('active', 'pulse');
+                    break;
+                case 'tts':
+                    stageScript.classList.add('active');
+                    stageAudio.classList.add('active', 'pulse');
+                    break;
+                case 'images':
+                    stageScript.classList.add('active');
+                    stageAudio.classList.add('active');
+                    stageImages.classList.add('active', 'pulse');
+                    break;
+                case 'assemble':
+                    stageScript.classList.add('active');
+                    stageAudio.classList.add('active');
+                    stageImages.classList.add('active');
+                    stageVideo.classList.add('active', 'pulse');
+                    break;
+                case 'done':
+                    stageScript.classList.add('active');
+                    stageAudio.classList.add('active');
+                    stageImages.classList.add('active');
+                    stageVideo.classList.add('active');
+                    [stageScript, stageAudio, stageImages, stageVideo].forEach(stage => {
+                        stage.classList.remove('pulse');
+                    });
+                    break;
+            }
+        }
+
+        function addScriptLine(line, index) {
+            scriptLines.push(line);
+            
+            // Show script preview section if hidden
+            if (scriptPreviewSection.style.display === 'none') {
+                scriptPreviewSection.style.display = 'block';
+            }
+            
+            // Create script line element
+            const lineDiv = document.createElement('div');
+            lineDiv.className = 'script-line';
+            lineDiv.innerHTML = `
+                <span class="line-number">Scene ${index}:</span>
+                <span>${escapeHtml(line)}</span>
+            `;
+            
+            scriptPreview.appendChild(lineDiv);
+            
+            // Scroll to bottom of script preview
+            lineDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function addImageToGallery(sceneNum, method) {
+            imagesGenerated++;
+            imageCount.textContent = `${imagesGenerated}/5`;
+            
+            // Show image gallery section if hidden
+            if (imageGallerySection.style.display === 'none') {
+                imageGallerySection.style.display = 'block';
+            }
+            
+            // Get the run_id from current websocket URL
+            const runId = currentWebSocket ? currentWebSocket.url.split('/').pop() : null;
+            if (!runId) return;
+            
+            // Create image element
+            const imageItem = document.createElement('div');
+            imageItem.className = 'image-item';
+            imageItem.innerHTML = `
+                <img src="/outputs/${runId}/scene_${sceneNum + 1}.jpg" alt="Scene ${sceneNum + 1}" loading="lazy">
+                <div class="image-label">Scene ${sceneNum + 1} • ${method}</div>
+            `;
+            
+            imageGallery.appendChild(imageItem);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showStatus(message, type = 'info') {
+            statusDiv.className = `alert alert-${type}`;
+            statusDiv.textContent = message;
+            statusDiv.style.display = 'block';
+        }
+
+        function showVideo(runId) {
+            const videoUrl = `/outputs/${runId}/output.mp4`;
+            videoPlayer.src = videoUrl;
+            downloadBtn.href = videoUrl;
+            downloadBtn.download = `script-to-roughcut-${runId}.mp4`;
+            videoContainer.style.display = 'block';
+            
+            // Scroll to video
+            videoContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function resetButton() {
+            generateBtn.disabled = false;
+            generateBtn.classList.remove('btn-loading');
+            btnText.textContent = 'Generate';
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (currentWebSocket) {
+                currentWebSocket.close();
+            }
+        });
+    </script>
+</body>
+</html>
